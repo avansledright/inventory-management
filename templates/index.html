@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory Management System</title>
+    <style>
+        /* Modern, clean CSS */
+        :root {
+            --primary-color: #2563eb;
+            --background-color: #f8fafc;
+            --text-color: #1e293b;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .search-container {
+            background: white;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 0.75rem;
+            font-size: 1rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.375rem;
+            margin-bottom: 1rem;
+        }
+
+        .result-container {
+            margin-top: 2rem;
+            background: white;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            display: none;
+        }
+
+        .info-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .info-section h3 {
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
+        .error-message {
+            color: #dc2626;
+            display: none;
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="search-container">
+            <h1>Inventory Management System</h1>
+            <input type="text" 
+                   id="assetId" 
+                   class="search-box" 
+                   placeholder="Enter Asset ID"
+                   onkeypress="handleKeyPress(event)">
+            <button onclick="searchAsset()">Search</button>
+        </div>
+
+        <div id="error" class="error-message"></div>
+
+        <div id="result" class="result-container">
+            <div class="info-section">
+                <h3>General Information</h3>
+                <div id="generalInfo"></div>
+            </div>
+            
+            <div class="info-section">
+                <h3>Sensitive Information</h3>
+                <div id="sensitiveInfo"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                searchAsset();
+            }
+        }
+
+        function searchAsset() {
+            const assetId = document.getElementById('assetId').value.trim();
+            if (!assetId) return;
+
+            fetch(`/search/${assetId}`)
+                .then(response => response.json())
+                .then(data => {
+                    const resultContainer = document.getElementById('result');
+                    const errorElement = document.getElementById('error');
+                    
+                    if (data.error) {
+                        errorElement.textContent = data.error;
+                        errorElement.style.display = 'block';
+                        resultContainer.style.display = 'none';
+                        return;
+                    }
+
+                    errorElement.style.display = 'none';
+                    resultContainer.style.display = 'block';
+
+                    // Parse the JSON strings
+                    const generalData = JSON.parse(data.general);
+                    const sensitiveData = data.sensitive ? JSON.parse(data.sensitive) : null;
+
+                    // Display general information
+                    document.getElementById('generalInfo').innerHTML = formatInfo(generalData);
+                    
+                    // Display sensitive information
+                    document.getElementById('sensitiveInfo').innerHTML = 
+                        sensitiveData ? formatInfo(sensitiveData) : 'No sensitive information available';
+                })
+                .catch(error => {
+                    document.getElementById('error').textContent = 'An error occurred while fetching the data';
+                    document.getElementById('error').style.display = 'block';
+                    document.getElementById('result').style.display = 'none';
+                });
+        }
+
+        function formatInfo(data) {
+            return Object.entries(data)
+                .filter(([key]) => key !== '_id')
+                .map(([key, value]) => `<p><strong>${key}:</strong> ${value}</p>`)
+                .join('');
+        }
+    </script>
+</body>
+</html>
